@@ -14,7 +14,7 @@ public abstract class AIServiceConnector
         Logger = logger ?? NullLogger.Instance;
     }
 
-    public abstract Task<string> TextCompletionAsync(string prompt, LLMServiceSetting requestSetting, CancellationToken cancellationToken = default);
+    public abstract Task<ChatHistory> ChatCompletionAsync(ChatHistory chatHistory, LLMServiceSetting requestSetting, CancellationToken cancellationToken = default);
 
     protected static async Task<T> RunRequestAsync<T>(Func<Task<T>?> request)
     {
