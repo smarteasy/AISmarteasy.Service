@@ -5,6 +5,8 @@ VisualStudioVersion = 17.8.34309.116
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AISmarteasy.Service", "AISmarteasy.Service\AISmarteasy.Service.csproj", "{EACA4EFF-B0DD-4B5D-8AD3-38DA44A75720}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AISmarteasy.Core", "..\AISmarteasy.Core\AISmarteasy.Core\AISmarteasy.Core.csproj", "{DC2B2417-4E83-402A-A025-EBEA0E5DC826}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{EACA4EFF-B0DD-4B5D-8AD3-38DA44A75720}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EACA4EFF-B0DD-4B5D-8AD3-38DA44A75720}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EACA4EFF-B0DD-4B5D-8AD3-38DA44A75720}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DC2B2417-4E83-402A-A025-EBEA0E5DC826}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DC2B2417-4E83-402A-A025-EBEA0E5DC826}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DC2B2417-4E83-402A-A025-EBEA0E5DC826}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DC2B2417-4E83-402A-A025-EBEA0E5DC826}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
