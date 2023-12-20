@@ -11,6 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\AISmarteasy.Core.Function\AISmarteasy.Core.Function\AISmarteasy.Core.Function.csproj" />
     <ProjectReference Include="..\..\AISmarteasy.Core\AISmarteasy.Core\AISmarteasy.Core.csproj" />
   </ItemGroup>
 

@@ -1,15 +1,13 @@
-﻿namespace AISmarteasy.Service.OpenAI;
+﻿using AISmarteasy.Core;
+
+namespace AISmarteasy.Service.OpenAI;
 
 public static class OpenAIConfigProvider
 {
-    public static string ProvideChatCompletionModel()
+    public static string ProvideModel(AIServiceTypeKind serviceType)
     {
-        return "gpt-4-1106-preview";
-    }
-
-    public static string ProvideEmbeddingModel()
-    {
+        if(serviceType==AIServiceTypeKind.TextCompletion)
+            return "gpt-4-1106-preview";
         return "text-embedding-ada-002";
     }
-
 }

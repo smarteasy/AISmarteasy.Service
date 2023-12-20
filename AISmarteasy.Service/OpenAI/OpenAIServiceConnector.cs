@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics.Metrics;
 using AISmarteasy.Core;
+using AISmarteasy.Core.Function;
 using Azure;
 using Azure.AI.OpenAI;
 using Azure.Core;
@@ -35,7 +36,7 @@ public class OpenAIServiceConnector : AIServiceConnector
         string? organization = null, HttpClient ? httpClient = null, ILogger? logger = null) 
         : base(logger)
     {
-      DeploymentNameOrModelId = OpenAIConfigProvider.ProvideChatCompletionModel();
+      DeploymentNameOrModelId = OpenAIConfigProvider.ProvideModel(serviceType);
 
       var options = BuildClientOptions(organization, httpClient);
       Client = new OpenAIClient(apiKey, options);
@@ -66,7 +67,7 @@ public class OpenAIServiceConnector : AIServiceConnector
     }
 
 
-    public override async Task<ChatHistory> ChatCompletionAsync(ChatHistory chatHistory, LLMServiceSetting requestSetting, CancellationToken cancellationToken = default)
+    public override async Task<ChatHistory> TextCompletionAsync(ChatHistory chatHistory, LLMServiceSetting requestSetting, CancellationToken cancellationToken = default)
     {
         Verifier.NotNull(chatHistory);
         Verifier.NotNull(Client);
@@ -74,7 +75,7 @@ public class OpenAIServiceConnector : AIServiceConnector
         ValidateMaxTokens(requestSetting.MaxTokens);
         var chatOptions = CreateCompletionsOptions(requestSetting, chatHistory);
 
-        Response<ChatCompletions>? response = await RunRequestAsync<Response<ChatCompletions>?>(
+        Response<ChatCompletions>? response = await RunAsync<Response<ChatCompletions>?>(
             () => Client.GetChatCompletionsAsync(chatOptions, cancellationToken)).ConfigureAwait(false);
 
         if (response is null)
