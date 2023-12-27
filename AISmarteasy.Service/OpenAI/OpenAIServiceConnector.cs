@@ -32,8 +32,8 @@ public class OpenAIServiceConnector : AIServiceConnector
             name: "AISmarteasy.Core.Connector.OpenAI.TotalTokens",
             description: "Total number of tokens used");
 
-    public OpenAIServiceConnector(AIServiceTypeKind serviceType, string apiKey,
-        string? organization = null, HttpClient ? httpClient = null, ILogger? logger = null) 
+    public OpenAIServiceConnector(AIServiceTypeKind serviceType, string apiKey, ILogger logger,
+        string? organization = null, HttpClient ? httpClient = null) 
         : base(logger)
     {
       DeploymentNameOrModelId = OpenAIConfigProvider.ProvideModel(serviceType);
