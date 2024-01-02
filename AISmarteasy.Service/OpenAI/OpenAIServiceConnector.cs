@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.Metrics;
+using System.Runtime.CompilerServices;
 using AISmarteasy.Core;
 using AISmarteasy.Core.Function;
 using Azure;
@@ -99,6 +100,39 @@ public class OpenAIServiceConnector : AIServiceConnector
         return chatHistory;
     }
 
+
+    public override async IAsyncEnumerable<ChatStreamingResult> TextCompletionStreamingAsync(ChatHistory chatHistory, LLMServiceSetting requestSetting,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        Verifier.NotNull(chatHistory);
+        Verifier.NotNull(Client);
+
+        ValidateMaxTokens(requestSetting.MaxTokens);
+        var chatOptions = CreateCompletionsOptions(requestSetting, chatHistory);
+        var response = await RunAsync<StreamingResponse<StreamingChatCompletionsUpdate>>(
+                () => Client.GetChatCompletionsStreamingAsync(chatOptions, cancellationToken)).ConfigureAwait(false);
+
+        if (response is null)
+        {
+            throw new CoreException("Chat completions null response");
+        }
+
+        var chatStreamingResult = new ChatStreamingResult();
+
+        await foreach (var chatUpdate in response)
+        {
+            if (chatUpdate.Role.HasValue)
+            {
+                chatStreamingResult.Role = chatUpdate.Role.Value.ToString();
+            }
+            if (!string.IsNullOrEmpty(chatUpdate.ContentUpdate))
+            {
+                chatStreamingResult.Content = chatUpdate.ContentUpdate;
+            }
+
+            yield return chatStreamingResult;
+        }
+    }
 
     private ChatCompletionsOptions CreateCompletionsOptions(LLMServiceSetting requestSetting, IEnumerable<ChatMessageBase> chatHistory)
     {
@@ -225,31 +259,7 @@ public class OpenAIServiceConnector : AIServiceConnector
     //    return result;
     //}
 
-    //private protected async IAsyncEnumerable<IChatStreamingResult> GetChatStreamingResultsAsync(IEnumerable<ChatMessageBase> chat,
-    //    AIRequestSettings? requestSettings, [EnumeratorCancellation] CancellationToken cancellationToken = default)
-    //{
-    //    Verify.NotNull(chat);
-    //    Verify.NotNull(Client);
-    //    requestSettings ??= new();
 
-    //    ValidateMaxTokens(requestSettings.MaxTokens);
-
-    //    var options = CreateChatCompletionsOptions(requestSettings, chat);
-
-    //    Response<StreamingChatCompletions>? response = await RunRequestAsync<Response<StreamingChatCompletions>>(
-    //        () => Client.GetChatCompletionsStreamingAsync(ModelId, options, cancellationToken)).ConfigureAwait(false);
-
-    //    if (response is null)
-    //    {
-    //        throw new SKException("Chat completions null response");
-    //    }
-
-    //    using StreamingChatCompletions streamingChatCompletions = response.Value;
-    //    await foreach (StreamingChatChoice choice in streamingChatCompletions.GetChoicesStreaming(cancellationToken).ConfigureAwait(false))
-    //    {
-    //        yield return new ChatStreamingResult(response.Value, choice);
-    //    }
-    //}
 
     //private protected async Task<IReadOnlyList<ITextResult>> GetChatResultsAsTextAsync(string text,
     //    AIRequestSettings? textSettings, CancellationToken cancellationToken = default)
