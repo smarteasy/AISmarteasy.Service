@@ -6,8 +6,35 @@ public static class OpenAIConfigProvider
 {
     public static string ProvideModel(AIServiceTypeKind serviceType)
     {
-        if(serviceType==AIServiceTypeKind.TextCompletion)
-            return "gpt-4-1106-preview";
-        return "text-embedding-ada-002";
+        switch (serviceType)
+        {
+            case AIServiceTypeKind.TextCompletion:
+                return "gpt-4-1106-preview";
+            case AIServiceTypeKind.TextToSpeechSpeed:
+                return "tts-1-hd";
+            case AIServiceTypeKind.TextToSpeechQuality:
+                return "tts-1";
+            default:
+                return "text-embedding-ada-002";
+        }
+    }
+
+    public static string ProvideTtsVoice(TtsVoiceKind voice)
+    {
+        switch (voice)
+        {
+            case TtsVoiceKind.Echo:
+                return "echo";
+            case TtsVoiceKind.Fable:
+                return "fable";
+            case TtsVoiceKind.Onyx:
+                return "onyx";
+            case TtsVoiceKind.Nova:
+                return "nova";
+            case TtsVoiceKind.Shimmer:
+                return "shimmer";
+            default:
+                return "alloy";
+        }
     }
 }

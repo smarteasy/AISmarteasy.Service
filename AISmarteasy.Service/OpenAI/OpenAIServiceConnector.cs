@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics.Metrics;
 using System.Runtime.CompilerServices;
+using System.Text;
 using AISmarteasy.Core;
 using AISmarteasy.Core.Function;
 using Azure;
@@ -7,6 +8,9 @@ using Azure.AI.OpenAI;
 using Azure.Core;
 using Azure.Core.Pipeline;
 using Microsoft.Extensions.Logging;
+using OpenAI_API;
+using OpenAI_API.Audio;
+using static OpenAI_API.Audio.TextToSpeechRequest;
 
 namespace AISmarteasy.Service.OpenAI;
 
@@ -14,6 +18,8 @@ public class OpenAIServiceConnector : AIServiceConnector
 {
     private const int MAX_RESULTS_PER_PROMPT = 128;
     protected OpenAIClient Client { get; }
+    protected OpenAIAPI TtsClient { get; }
+
     private protected string DeploymentNameOrModelId { get; set; }
 
     private static readonly Meter Meter = new(typeof(OpenAIServiceConnector).Assembly.GetName().Name!);
@@ -33,6 +39,8 @@ public class OpenAIServiceConnector : AIServiceConnector
             name: "AISmarteasy.Core.Connector.OpenAI.TotalTokens",
             description: "Total number of tokens used");
 
+
+
     public OpenAIServiceConnector(AIServiceTypeKind serviceType, string apiKey, ILogger logger,
         string? organization = null, HttpClient ? httpClient = null) 
         : base(logger)
@@ -41,6 +49,7 @@ public class OpenAIServiceConnector : AIServiceConnector
 
       var options = BuildClientOptions(organization, httpClient);
       Client = new OpenAIClient(apiKey, options);
+      TtsClient = new OpenAIAPI(apiKey);
     }
 
     private static OpenAIClientOptions BuildClientOptions(string? organization, HttpClient? httpClient)
@@ -100,7 +109,6 @@ public class OpenAIServiceConnector : AIServiceConnector
         return chatHistory;
     }
 
-
     public override async IAsyncEnumerable<ChatStreamingResult> TextCompletionStreamingAsync(ChatHistory chatHistory, LLMServiceSetting requestSetting,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
@@ -132,6 +140,53 @@ public class OpenAIServiceConnector : AIServiceConnector
 
             yield return chatStreamingResult;
         }
+    }
+
+    public override async Task<string> SpeechToTextAsync(List<string> speechFilePaths,
+        string language = "en", TranscriptionFormatKind transcriptionFormat = TranscriptionFormatKind.SingleTextJson, CancellationToken cancellationToken = default)
+    {
+        var transcript = new StringBuilder();
+
+        var responseFormat = transcriptionFormat switch
+        {
+            TranscriptionFormatKind.SubRip => AudioTranscriptionFormat.Srt,
+            TranscriptionFormatKind.WebVideoTextTrack => AudioTranscriptionFormat.Vtt,
+            TranscriptionFormatKind.MetadataJson => AudioTranscriptionFormat.Verbose,
+            _ => AudioTranscriptionFormat.Simple
+        };
+
+        foreach (var speechFilePath in speechFilePaths)
+        {
+            var fileName = Path.GetFileName(speechFilePath);
+            var transOptions = new AudioTranscriptionOptions
+            {
+                DeploymentName = DeploymentNameOrModelId,
+                AudioData = await BinaryData.FromStreamAsync(File.OpenRead(speechFilePath), cancellationToken),
+                ResponseFormat = responseFormat,
+                Language = language,
+                Filename = fileName
+            };
+
+            Response<AudioTranscription> transcriptionResponse = await Client.GetAudioTranscriptionAsync(transOptions, cancellationToken);
+            AudioTranscription transcription = transcriptionResponse.Value;
+            transcript.AppendLine(transcription.Text);
+        }
+
+        return transcript.ToString();
+    }
+
+    public override async Task TextToSpeechAsync(TextToSpeechRunRequest request)
+    {
+        var ttsRequest = new TextToSpeechRequest()
+        {
+            Input = LLMWorkEnv.WorkerContext.Variables.Input,
+            ResponseFormat = ResponseFormats.AAC,
+            Model = OpenAIConfigProvider.ProvideModel(AIServiceTypeKind.TextToSpeechQuality),
+            Voice = OpenAIConfigProvider.ProvideTtsVoice(TtsVoiceKind.Nova),
+            Speed = 0.9
+        };
+
+        await TtsClient.TextToSpeech.SaveSpeechToFileAsync(ttsRequest, request.SpeechFilePath);
     }
 
     private ChatCompletionsOptions CreateCompletionsOptions(LLMServiceSetting requestSetting, IEnumerable<ChatMessageBase> chatHistory)
@@ -286,10 +341,6 @@ public class OpenAIServiceConnector : AIServiceConnector
     //protected abstract ChatHistory PrepareChatHistory(string text, AIRequestSettings? requestSettings, out AIRequestSettings settings);
 
 
-
-
-
-
     //protected static void ValidateMaxTokens(int? maxTokens)
     //{
     //    if (maxTokens is < 1)
@@ -309,11 +360,4 @@ public class OpenAIServiceConnector : AIServiceConnector
     //        throw e.ToHttpOperationException();
     //    }
     //}
-
-    //public ChatHistory CreateNewChat(string? systemMessage = null)
-    //{
-    //    return new OpenAIChatHistory(systemMessage);
-    //}
-
-
 }
