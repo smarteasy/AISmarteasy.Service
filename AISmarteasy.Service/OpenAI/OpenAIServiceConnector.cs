@@ -189,6 +189,18 @@ public class OpenAIServiceConnector : AIServiceConnector
         await TtsClient.TextToSpeech.SaveSpeechToFileAsync(ttsRequest, request.SpeechFilePath);
     }
 
+    public override Task<Stream> TextToSpeechStreamAsync(TextToSpeechRunRequest request)
+    {
+        var ttsRequest = new TextToSpeechRequest()
+        {
+            Input = LLMWorkEnv.WorkerContext.Variables.Input,
+            Model = OpenAIConfigProvider.ProvideModel(AIServiceTypeKind.TextToSpeechQuality),
+            Voice = OpenAIConfigProvider.ProvideTtsVoice(TtsVoiceKind.Nova)
+        };
+
+        return TtsClient.TextToSpeech.GetSpeechAsStreamAsync(ttsRequest);
+    }
+
     private ChatCompletionsOptions CreateCompletionsOptions(LLMServiceSetting requestSetting, IEnumerable<ChatMessageBase> chatHistory)
     {
         if (requestSetting.ResultsPerPrompt is < 1 or > MAX_RESULTS_PER_PROMPT)

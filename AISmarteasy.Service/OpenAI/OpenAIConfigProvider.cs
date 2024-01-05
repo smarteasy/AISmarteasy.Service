@@ -10,6 +10,8 @@ public static class OpenAIConfigProvider
         {
             case AIServiceTypeKind.TextCompletion:
                 return "gpt-4-1106-preview";
+            case AIServiceTypeKind.SpeechToText:
+                return "whisper-1";
             case AIServiceTypeKind.TextToSpeechSpeed:
                 return "tts-1-hd";
             case AIServiceTypeKind.TextToSpeechQuality:
