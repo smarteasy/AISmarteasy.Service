@@ -77,6 +77,45 @@ public class OpenAIServiceConnector : AIServiceConnector
     }
 
 
+    public override async Task<string> GenerateImageAsync(ImageGenerationRequest request, CancellationToken cancellationToken = default)
+    {
+        var size = (request.Width, request.Height) switch
+        {
+            (1024, 1024) => ImageSize.Size1024x1024,
+            (1792, 1024) => ImageSize.Size1792x1024,
+            (1024, 1792) => ImageSize.Size1024x1792,
+            _ => throw new NotSupportedException("Dall-E 3 can only generate images of the following sizes 1024x1024, 1792x1024, or 1024x1792")
+        };
+
+        Response<ImageGenerations> imageGenerations;
+        try
+        {
+            imageGenerations = await Client.GetImageGenerationsAsync(
+                new ImageGenerationOptions
+                {
+                    DeploymentName = DeploymentNameOrModelId,
+                    Prompt = request.ImageDescription,
+                    Size = size
+                }, cancellationToken).ConfigureAwait(false);
+        }
+        catch (RequestFailedException e)
+        {
+            throw e.ToHttpOperationException();
+        }
+
+        if (!imageGenerations.HasValue)
+        {
+            throw new CoreException("The response does not contain an image result");
+        }
+
+        if (imageGenerations.Value.Data.Count == 0)
+        {
+            throw new CoreException("The response does not contain any image");
+        }
+
+        return imageGenerations.Value.Data[0].Url.AbsoluteUri;
+    }
+
     public override async Task<ChatHistory> TextCompletionAsync(ChatHistory chatHistory, LLMServiceSetting requestSetting, CancellationToken cancellationToken = default)
     {
         Verifier.NotNull(chatHistory);
@@ -175,21 +214,21 @@ public class OpenAIServiceConnector : AIServiceConnector
         return transcript.ToString();
     }
 
-    public override async Task TextToSpeechAsync(TextToSpeechRunRequest request)
+    public override async Task GenerateAudioAsync(AudioGenerationRequest request)
     {
         var ttsRequest = new TextToSpeechRequest()
         {
             Input = LLMWorkEnv.WorkerContext.Variables.Input,
             ResponseFormat = ResponseFormats.AAC,
             Model = OpenAIConfigProvider.ProvideModel(AIServiceTypeKind.TextToSpeechQuality),
-            Voice = OpenAIConfigProvider.ProvideTtsVoice(TtsVoiceKind.Nova),
+            Voice = request.Voice,
             Speed = 0.9
         };
 
         await TtsClient.TextToSpeech.SaveSpeechToFileAsync(ttsRequest, request.SpeechFilePath);
     }
 
-    public override Task<Stream> TextToSpeechStreamAsync(TextToSpeechRunRequest request)
+    public override Task<Stream> GenerateAudioStreamAsync(AudioGenerationRequest request)
     {
         var ttsRequest = new TextToSpeechRequest()
         {

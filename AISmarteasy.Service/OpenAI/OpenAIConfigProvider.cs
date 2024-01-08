@@ -16,6 +16,8 @@ public static class OpenAIConfigProvider
                 return "tts-1-hd";
             case AIServiceTypeKind.TextToSpeechQuality:
                 return "tts-1";
+            case AIServiceTypeKind.ImageGeneration:
+                return "dall-e-3";
             default:
                 return "text-embedding-ada-002";
         }
