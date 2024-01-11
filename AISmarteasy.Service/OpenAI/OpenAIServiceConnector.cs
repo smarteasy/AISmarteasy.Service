@@ -116,7 +116,7 @@ public class OpenAIServiceConnector : AIServiceConnector
         return imageGenerations.Value.Data[0].Url.AbsoluteUri;
     }
 
-    public override async Task<ChatHistory> TextCompletionAsync(ChatHistory chatHistory, LLMServiceSetting requestSetting, CancellationToken cancellationToken = default)
+    public override async Task<ChatHistory> RunTextCompletionAsync(ChatHistory chatHistory, LLMServiceSetting requestSetting, CancellationToken cancellationToken = default)
     {
         Verifier.NotNull(chatHistory);
         Verifier.NotNull(Client);
@@ -148,7 +148,7 @@ public class OpenAIServiceConnector : AIServiceConnector
         return chatHistory;
     }
 
-    public override async IAsyncEnumerable<ChatStreamingResult> TextCompletionStreamingAsync(ChatHistory chatHistory, LLMServiceSetting requestSetting,
+    public override async IAsyncEnumerable<ChatStreamingResult> RunTextCompletionStreamingAsync(ChatHistory chatHistory, LLMServiceSetting requestSetting,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         Verifier.NotNull(chatHistory);
@@ -181,12 +181,11 @@ public class OpenAIServiceConnector : AIServiceConnector
         }
     }
 
-    public override async Task<string> SpeechToTextAsync(List<string> speechFilePaths,
-        string language = "en", TranscriptionFormatKind transcriptionFormat = TranscriptionFormatKind.SingleTextJson, CancellationToken cancellationToken = default)
+    public override async Task<string> RunSpeechToTextAsync(SpeechToTextRunRequest request, CancellationToken cancellationToken = default)
     {
         var transcript = new StringBuilder();
 
-        var responseFormat = transcriptionFormat switch
+        var responseFormat = request.TranscriptionFormat switch
         {
             TranscriptionFormatKind.SubRip => AudioTranscriptionFormat.Srt,
             TranscriptionFormatKind.WebVideoTextTrack => AudioTranscriptionFormat.Vtt,
@@ -194,23 +193,42 @@ public class OpenAIServiceConnector : AIServiceConnector
             _ => AudioTranscriptionFormat.Simple
         };
 
-        foreach (var speechFilePath in speechFilePaths)
+        if (request.SpeechSourceType == SpeechSourceTypeKind.Files)
         {
-            var fileName = Path.GetFileName(speechFilePath);
+            Verifier.NotNull(request.SpeechFilePaths);
+
+            foreach (var speechFilePath in request.SpeechFilePaths)
+            {
+                var fileName = Path.GetFileName(speechFilePath);
+                var transOptions = new AudioTranscriptionOptions
+                {
+                    DeploymentName = DeploymentNameOrModelId,
+                    AudioData = await BinaryData.FromStreamAsync(File.OpenRead(speechFilePath), cancellationToken),
+                    ResponseFormat = responseFormat,
+                    Language = request.Language,
+                    Filename = fileName
+                };
+
+                Response<AudioTranscription> transcriptionResponse = await Client.GetAudioTranscriptionAsync(transOptions, cancellationToken);
+                AudioTranscription transcription = transcriptionResponse.Value;
+                transcript.AppendLine(transcription.Text);
+            }
+        }
+        else
+        {
             var transOptions = new AudioTranscriptionOptions
             {
                 DeploymentName = DeploymentNameOrModelId,
-                AudioData = await BinaryData.FromStreamAsync(File.OpenRead(speechFilePath), cancellationToken),
+                AudioData = new BinaryData(request.SpeechData),
                 ResponseFormat = responseFormat,
-                Language = language,
-                Filename = fileName
+                Language = request.Language,
+                Filename = "./temp.mp3"
             };
 
             Response<AudioTranscription> transcriptionResponse = await Client.GetAudioTranscriptionAsync(transOptions, cancellationToken);
             AudioTranscription transcription = transcriptionResponse.Value;
             transcript.AppendLine(transcription.Text);
         }
-
         return transcript.ToString();
     }
 
@@ -234,7 +252,7 @@ public class OpenAIServiceConnector : AIServiceConnector
         {
             Input = LLMWorkEnv.WorkerContext.Variables.Input,
             Model = OpenAIConfigProvider.ProvideModel(AIServiceTypeKind.TextToSpeechQuality),
-            Voice = OpenAIConfigProvider.ProvideTtsVoice(TtsVoiceKind.Nova)
+            Voice = request.Voice
         };
 
         return TtsClient.TextToSpeech.GetSpeechAsStreamAsync(ttsRequest);

@@ -9,7 +9,7 @@ public sealed class GoogleConnector : IWebSearchEngineConnector
     private readonly CustomSearchAPIService _search;
     private readonly string? _searchEngineId;
 
-    public GoogleConnector(string apiKey, string searchEngineId) : 
+    public GoogleConnector(string apiKey, string searchEngineId) :
         this(new BaseClientService.Initializer { ApiKey = apiKey }, searchEngineId)
     {
         Verifier.NotNullOrWhitespace(apiKey);
@@ -24,21 +24,26 @@ public sealed class GoogleConnector : IWebSearchEngineConnector
         _searchEngineId = searchEngineId;
     }
 
-    public async Task<IEnumerable<string>> SearchAsync(string query, int count, int offset)
+    public async Task<IEnumerable<string>> SearchAsync(string query, int count, int offset, CancellationToken cancellationToken)
     {
-        if (count <= 0) { throw new ArgumentOutOfRangeException(nameof(count)); }
+        if (count is <= 0 or > 10)
+        {
+            throw new ArgumentOutOfRangeException(nameof(count), count,
+                $"{nameof(count)} value must be must be greater than 0 and less than or equals 10.");
+        }
 
-        if (count > 10) { throw new ArgumentOutOfRangeException(nameof(count), $"{nameof(count)} value must be between 0 and 10, inclusive."); }
+        if (offset < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(offset));
+        }
 
-        if (offset < 0) { throw new ArgumentOutOfRangeException(nameof(offset)); }
-
-        var search = _search.Cse.List();
-        search.Cx = _searchEngineId;
+        var search = this._search.Cse.List();
+        search.Cx = this._searchEngineId;
         search.Q = query;
         search.Num = count;
         search.Start = offset;
 
-        var results = await search.ExecuteAsync().ConfigureAwait(false);
+        var results = await search.ExecuteAsync(cancellationToken).ConfigureAwait(false);
 
         return results.Items.Select(item => item.Snippet);
     }
