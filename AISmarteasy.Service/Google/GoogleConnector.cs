@@ -37,8 +37,8 @@ public sealed class GoogleConnector : IWebSearchEngineConnector
             throw new ArgumentOutOfRangeException(nameof(offset));
         }
 
-        var search = this._search.Cse.List();
-        search.Cx = this._searchEngineId;
+        var search = _search.Cse.List();
+        search.Cx = _searchEngineId;
         search.Q = query;
         search.Num = count;
         search.Start = offset;

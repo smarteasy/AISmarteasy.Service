@@ -10,6 +10,8 @@ public static class OpenAIConfigProvider
         {
             case AIServiceTypeKind.TextCompletion:
                 return "gpt-4-1106-preview";
+            case AIServiceTypeKind.Vision:
+                return "gpt-4-vision-preview";
             case AIServiceTypeKind.SpeechToText:
                 return "whisper-1";
             case AIServiceTypeKind.TextToSpeechSpeed:
@@ -18,9 +20,11 @@ public static class OpenAIConfigProvider
                 return "tts-1";
             case AIServiceTypeKind.ImageGeneration:
                 return "dall-e-3";
-            default:
+            case AIServiceTypeKind.Embedding:
                 return "text-embedding-ada-002";
         }
+
+        throw new InvalidOperationException();
     }
 
     public static string ProvideTtsVoice(TtsVoiceKind voice)

@@ -7,10 +7,24 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="OpenAI\Tokenizer\encoder.json" />
+    <None Remove="OpenAI\Tokenizer\vocab.bpe" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="OpenAI\encoder.json" />
+    <EmbeddedResource Include="OpenAI\vocab.bpe" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Azure.AI.OpenAI" Version="1.0.0-beta.12" />
-    <PackageReference Include="Google.Apis" Version="1.64.0" />
-    <PackageReference Include="Google.Apis.CustomSearchAPI.v1" Version="1.64.0.3106" />
+    <PackageReference Include="ClosedXML" Version="0.104.0-preview2" />
+    <PackageReference Include="DocumentFormat.OpenXml" Version="3.0.1" />
+    <PackageReference Include="Google.Apis" Version="1.67.0-beta01" />
+    <PackageReference Include="Google.Apis.CustomSearchAPI.v1" Version="1.66.0.3290" />
     <PackageReference Include="OpenAI" Version="1.10.0" />
+    <PackageReference Include="PdfPig" Version="0.1.9-alpha-20240128-f886e" />
+    <PackageReference Include="System.Numerics.Tensors" Version="8.0.0" />
   </ItemGroup>
 
   <ItemGroup>
